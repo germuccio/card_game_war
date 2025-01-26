@@ -32,4 +32,8 @@ Git and GitHub: Use Git for version control. Each major feature should be commit
 
 Pair Programming: You will collaborate with a peer during at least 3 pair programming sessions. At least one session will involve working on your project, and one will involve working on another person's project.
 
-update
+Game Flow
+
+Start: The deck is shuffled and dealt to two players.
+Rounds: Players draw one card each. The higher card wins the round.
+End: The game ends when one player has all the cards or after a maximum number of rounds.
