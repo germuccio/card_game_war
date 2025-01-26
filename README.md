@@ -37,3 +37,17 @@ Game Flow
 Start: The deck is shuffled and dealt to two players.
 Rounds: Players draw one card each. The higher card wins the round.
 End: The game ends when one player has all the cards or after a maximum number of rounds.
+
+Running the Game
+To start the game, simply run the game.py file:
+
+bash
+Copy
+Edit
+python game.py
+This will simulate the War card game, displaying the results of each round.
+
+Future Enhancements
+User Input Mode: Allow users to make decisions or play interactively.
+Multiple Players: Extend the game to allow more than two players.
+Graphical Interface: Create a GUI to visualize the game (e.g., using tkinter or pygame).
