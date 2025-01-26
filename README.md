@@ -20,3 +20,5 @@ Gameplay:
 Players draw one card at a time.
 The player with the higher card value wins the round and takes both cards.
 In case of a tie, the player
+
+have fun! 
