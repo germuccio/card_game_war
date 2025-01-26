@@ -31,3 +31,5 @@ Game class to handle the overall game flow (rounds, wins, and losses).
 Git and GitHub: Use Git for version control. Each major feature should be committed as a separate GitHub issue and branch.
 
 Pair Programming: You will collaborate with a peer during at least 3 pair programming sessions. At least one session will involve working on your project, and one will involve working on another person's project.
+
+update
