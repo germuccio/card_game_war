@@ -1,175 +1,167 @@
 import random
+from enum import Enum
 from typing import List, Optional
 
+
+class Suit(Enum):
+    HEARTS = "Hearts"
+    DIAMONDS = "Diamonds"
+    CLUBS = "Clubs"
+    SPADES = "Spades"
+
+
+class Rank(Enum):
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+    SIX = 6
+    SEVEN = 7
+    EIGHT = 8
+    NINE = 9
+    TEN = 10
+    JACK = 11
+    QUEEN = 12
+    KING = 13
+    ACE = 14
+
+    @property
+    def display(self):
+        if self.value <= 10:
+            return str(self.value)
+        return self.name.capitalize()
+
+
 class Card:
-    """Represents a single playing card."""
-    SUITS = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
-    RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
-    
-    def __init__(self, suit: str, rank: str):
-        """Initialize a card with a suit and rank."""
+    def __init__(self, suit: Suit, rank: Rank):
         self.suit = suit
         self.rank = rank
-        self.value = self.RANKS.index(rank)
-    
-    def __repr__(self):
-        """String representation of the card."""
-        return f"{self.rank} of {self.suit}"
-    
+
+    def __str__(self):
+        return f"{self.rank.display} of {self.suit.value}"
+
     def __lt__(self, other):
-        """Compare card values for sorting and comparison."""
-        return self.value < other.value
-    
-    def __eq__(self, other):
-        """Check if cards have the same value."""
-        return self.value == other.value
+        return self.rank.value < other.rank.value
+
 
 class Deck:
-    """Represents a standard 52-card deck."""
     def __init__(self):
-        """Create a full deck of cards."""
-        self.cards = [
-            Card(suit, rank) 
-            for suit in Card.SUITS 
-            for rank in Card.RANKS
-        ]
-    
+        self.cards: List[Card] = []
+        self._create_deck()
+
+    def _create_deck(self):
+        self.cards = [Card(suit, rank) for suit in Suit for rank in Rank]
+
     def shuffle(self):
-        """Shuffle the deck of cards."""
         random.shuffle(self.cards)
-    
-    def deal(self, num_players: int) -> List[List[Card]]:
-        """Deal cards equally to specified number of players."""
-        self.shuffle()
-        hands = [[] for _ in range(num_players)]
-        for i, card in enumerate(self.cards):
-            hands[i % num_players].append(card)
-        return hands
+
+    def deal(self, num_cards: int) -> List[Card]:
+        if num_cards > len(self.cards):
+            raise ValueError("Not enough cards in deck")
+        dealt_cards = self.cards[:num_cards]
+        self.cards = self.cards[num_cards:]
+        return dealt_cards
+
 
 class Player:
-    """Represents a player in the War card game."""
-    def __init__(self, name: str, cards: List[Card]):
-        """Initialize a player with a name and cards."""
+    def __init__(self, name: str):
         self.name = name
-        self.cards = cards
-    
-    def play_card(self) -> Optional[Card]:
-        """Play the top card from the player's hand."""
-        return self.cards.pop(0) if self.cards else None
-    
-    def add_cards(self, cards: List[Card]):
-        """Add cards to the player's hand."""
-        self.cards.extend(cards)
-    
-    def has_cards(self) -> bool:
-        """Check if the player still has cards."""
-        return len(self.cards) > 0
+        self.hand: List[Card] = []
+        self.score = 0
 
-class WarGame:
-    """Manages the War card game logic."""
-    def __init__(self, player_names: List[str] = None):
-        """Initialize the game with players."""
-        # Default to two players if no names provided
-        if player_names is None:
-            player_names = ['Player 1', 'Player 2']
-        
-        # Create and deal the deck
-        deck = Deck()
-        hands = deck.deal(len(player_names))
-        
-        # Create players
-        self.players = [
-            Player(name, hand) 
-            for name, hand in zip(player_names, hands)
-        ]
-        
-        # Track game state
-        self.round = 0
-        self.max_rounds = 1000  # Prevent infinite game
-    
-    def play_round(self) -> Optional[str]:
-        """Play a single round of War."""
-        self.round += 1
-        
-        # Check if game should end
-        if self.round > self.max_rounds:
-            return "Game ended in a draw"
-        
-        # Track cards played this round
-        played_cards = []
-        current_players = []
-        
-        # Each active player plays a card
-        for player in self.players:
-            if not player.has_cards():
-                continue
-            
-            card = player.play_card()
-            played_cards.append(card)
-            current_players.append(player)
-        
-        # If only one player remains, they win
-        if len(current_players) == 1:
-            return f"{current_players[0].name} wins by default!"
-        
-        # Find the highest card
-        max_card = max(played_cards)
-        max_indices = [
-            i for i, card in enumerate(played_cards) 
-            if card == max_card
-        ]
-        
-        # Handle war (tie)
-        if len(max_indices) > 1:
-            # Collect war cards
-            war_cards = []
-            war_players = [current_players[i] for i in max_indices]
-            
-            # Each war player puts down 3 cards face down
-            for player in war_players:
-                war_cards.extend(
-                    player.play_card() for _ in range(3) 
-                    if player.has_cards()
-                )
+    def add_cards(self, cards: List[Card]):
+        self.hand.extend(cards)
+
+    def play_card(self) -> Optional[Card]:
+        if not self.hand:
+            return None
+        return self.hand.pop(0)
+
+    def add_to_score(self, points: int = 1):
+        self.score += points
+
+
+class Game:
+    def __init__(self, player1_name: str, player2_name: str):
+        self.deck = Deck()
+        self.player1 = Player(player1_name)
+        self.player2 = Player(player2_name)
+        self.round_number = 0
+
+    def setup_game(self):
+        self.deck.shuffle()
+        cards_per_player = len(self.deck.cards) // 2
+        self.player1.add_cards(self.deck.deal(cards_per_player))
+        self.player2.add_cards(self.deck.deal(cards_per_player))
+
+    def play_round(self) -> Optional[Player]:
+        self.round_number += 1
+        print(f"\nRound {self.round_number}")
+
+        card1 = self.player1.play_card()
+        card2 = self.player2.play_card()
+
+        if not card1 or not card2:
+            return None
+
+        print(f"{self.player1.name} plays: {card1}")
+        print(f"{self.player2.name} plays: {card2}")
+
+        if card1.rank.value > card2.rank.value:
+            self.player1.add_to_score()
+            winner = self.player1
+        elif card2.rank.value > card1.rank.value:
+            self.player2.add_to_score()
+            winner = self.player2
+        else:
+            print("It's a tie!")
+            return None
+
+        print(f"{winner.name} wins the round!")
+        return winner
+
+    def play_game(self):
+        self.setup_game()
+        print("Game started!")
+        print(f"Players: {self.player1.name} vs {self.player2.name}")
+        print("\nPress Enter to play each round or 'q' to quit")
+
+        while self.player1.hand and self.player2.hand:
+            user_input = input("\nPress Enter to continue or 'q' to quit: ")
+            if user_input.lower() == 'q':
+                print("\nGame terminated by user!")
+                return
                 
-                # Last card is the war card
-                if player.has_cards():
-                    card = player.play_card()
-                    played_cards.append(card)
-                    war_cards.append(card)
-            
-            # Winner takes all cards
-            winner = max(war_players, key=lambda p: played_cards[current_players.index(p)])
-            winner.add_cards(played_cards + war_cards)
-            return f"War! {winner.name} wins the round"
-        
-        # Normal round - winner takes all cards
-        winner = current_players[played_cards.index(max_card)]
-        winner.add_cards(played_cards)
-        
-        return f"{winner.name} wins the round"
-    
-    def play_game(self) -> str:
-        """Play the entire game until a winner is determined."""
-        while True:
-            # Count active players
-            active_players = [p for p in self.players if p.has_cards()]
-            
-            # End game if only one player has cards
-            if len(active_players) == 1:
-                return f"{active_players[0].name} wins the game!"
-            
-            # Play a round
-            result = self.play_round()
-            
-            # Optional: Uncomment to see round-by-round progress
-            # print(f"Round {self.round}: {result}")
-        
-# Example game play
-def main():
-    game = WarGame()
-    winner = game.play_game()
-    print(winner)
+            self.play_round()
+            print(f"Cards remaining - {self.player1.name}: {len(self.player1.hand)}, "
+                  f"{self.player2.name}: {len(self.player2.hand)}")
+            print(f"Scores - {self.player1.name}: {self.player1.score}, "
+                  f"{self.player2.name}: {self.player2.score}")
+
+        print("\nGame Over!")
+        if self.player1.score > self.player2.score:
+            winner = self.player1
+        elif self.player2.score > self.player1.score:
+            winner = self.player2
+        else:
+            print("It's a tie game!")
+            return
+
+        print(f"{winner.name} wins the game with {winner.score} points!")
+
+
+def get_player_name(player_number: int) -> str:
+    while True:
+        name = input(f"Enter name for Player {player_number}: ").strip()
+        if name:  # Check if name is not empty
+            return name
+        print("Name cannot be empty. Please try again.")
 
 if __name__ == "__main__":
-    main()
+    print("Welcome to the Card Game!")
+    print("-------------------------")
+    player1_name = get_player_name(1)
+    player2_name = get_player_name(2)
+    
+    game = Game(player1_name, player2_name)
+    game.play_game()
